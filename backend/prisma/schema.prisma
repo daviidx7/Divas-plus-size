@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  PENDENTE
+  PAGO
+  PREPARANDO
+  ENVIADO
+  CONCLUIDO
+  CANCELADO
+}
+
+model Admin {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String
+  slug      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+}
+
+model Product {
+  id          String            @id @default(uuid())
+  name        String
+  description String
+  price       Decimal           @db.Decimal(10, 2)
+  active      Boolean           @default(true)
+  destaque    Boolean           @default(false) // aparece na seção "Destaques" da home
+  category    Category          @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  images      ProductImage[]
+  variants    ProductVariant[]
+  orderItems  OrderItem[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model ProductImage {
+  id        String   @id @default(uuid())
+  url       String
+  order     Int      @default(0)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+}
+
+// Estoque real: cada combinação de tamanho + cor tem sua própria quantidade
+model ProductVariant {
+  id         String      @id @default(uuid())
+  size       String // P, M, G, GG...
+  color      String
+  stock      Int         @default(0)
+  active     Boolean     @default(true) // false = removido pela dona, mas guardado por causa do histórico de pedidos
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  String
+  orderItems OrderItem[]
+
+  @@unique([productId, size, color])
+}
+
+model Customer {
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  phone     String
+  cpf       String    @unique
+  addresses Address[]
+  orders    Order[]
+  createdAt DateTime  @default(now())
+}
+
+model Address {
+  id          String   @id @default(uuid())
+  cep         String
+  street      String
+  number      String
+  complement  String?
+  city        String
+  state       String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerId  String
+  orders      Order[]
+}
+
+model Order {
+  id         String      @id @default(uuid())
+  customer   Customer    @relation(fields: [customerId], references: [id])
+  customerId String
+  address    Address?    @relation(fields: [addressId], references: [id])
+  addressId  String? // vazio quando o cliente escolhe retirar na loja
+  deliveryType String    @default("ENTREGA") // ENTREGA ou RETIRADA
+  items      OrderItem[]
+  freight    Decimal     @db.Decimal(10, 2) @default(0)
+  total      Decimal     @db.Decimal(10, 2)
+  status     OrderStatus @default(PENDENTE)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String         @id @default(uuid())
+  order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String
+  product   Product        @relation(fields: [productId], references: [id])
+  productId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  variantId String
+  quantity  Int
+  price     Decimal        @db.Decimal(10, 2)
+}
