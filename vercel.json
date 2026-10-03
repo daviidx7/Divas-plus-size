@@ -1,8 +1,5 @@
-{
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
-}
+diva-moda
+└── frontend
+    ├── package.json
+    ├── src
+    └── vercel.json  ← AQUI
