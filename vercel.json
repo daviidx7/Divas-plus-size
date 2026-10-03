@@ -1,5 +1,8 @@
-diva-moda
-└── frontend
-    ├── package.json
-    ├── src
-    └── vercel.json  ← AQUI
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
