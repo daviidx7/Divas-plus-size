@@ -3,8 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import api, { imageUrl } from '../../services/api';
 import { compressImage } from '../../utils/image.js';
 
-const TAMANHOS = ['P', 'M', 'G', 'GG'];
-const novaVariante = () => ({ size: 'P', color: '', stock: 0 });
+const TAMANHOS = ['G', 'GG', 'G1', 'G2', 'G3', 'G4'];
+const novaVariante = () => ({ size: 'G', color: '', stock: 0 });
 
 const campo =
   'w-full border border-gray-300 rounded-lg px-4 py-3 text-base bg-white focus:outline-none focus:border-vinho';
