@@ -59,7 +59,7 @@ export default function Catalog() {
           className="w-full sm:w-auto border border-gray-300 rounded-lg px-3 py-2.5 text-base"
         >
           <option value="">Todos os tamanhos</option>
-          {['G', 'GG', 'G1', 'G2', 'G3', 'G4'].map((t) => (
+          {['P', 'M', 'G', 'GG', 'G1', 'G2', 'G3', 'G4'].map((t) => (
             <option key={t} value={t}>{t}</option>
           ))}
         </select>

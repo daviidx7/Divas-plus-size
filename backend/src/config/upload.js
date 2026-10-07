@@ -1,16 +1,4 @@
 const multer = require('multer');
-const path = require('path');
-const crypto = require('crypto');
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '..', '..', 'uploads'));
-  },
-  filename: (req, file, cb) => {
-    const nomeUnico = crypto.randomBytes(16).toString('hex');
-    cb(null, `${nomeUnico}${path.extname(file.originalname).toLowerCase() || '.jpg'}`);
-  },
-});
 
 function filtroArquivo(req, file, cb) {
   const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp'];
@@ -20,8 +8,10 @@ function filtroArquivo(req, file, cb) {
   cb(null, true);
 }
 
+// Guarda a foto na memória (não no disco) — necessário porque o servidor publicado
+// não permite salvar arquivos; a foto vai direto pro armazenamento externo (Vercel Blob).
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   fileFilter: filtroArquivo,
   limits: { fileSize: 15 * 1024 * 1024 }, // 15MB (o site já reduz a foto antes de enviar)
 });
