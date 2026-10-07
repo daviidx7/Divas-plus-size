@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import api, { imageUrl } from '../../services/api';
 import { compressImage } from '../../utils/image.js';
 
-const TAMANHOS = ['G', 'GG', 'G1', 'G2', 'G3', 'G4'];
+const TAMANHOS = ['P', 'M', 'G', 'GG', 'G1', 'G2', 'G3', 'G4'];
 const novaVariante = () => ({ size: 'G', color: '', stock: 0 });
 
 const campo =
