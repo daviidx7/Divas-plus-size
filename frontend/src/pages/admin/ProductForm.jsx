@@ -9,13 +9,24 @@ const novaVariante = () => ({ size: 'G', color: '', stock: 0 });
 const campo =
   'w-full border border-gray-300 rounded-lg px-4 py-3 text-base bg-white focus:outline-none focus:border-vinho';
 
+const reais = (valor) =>
+  Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
 export default function ProductForm() {
   const { id } = useParams();
   const editando = Boolean(id);
   const navigate = useNavigate();
 
   const [categorias, setCategorias] = useState([]);
-  const [form, setForm] = useState({ name: '', description: '', price: '', categoryId: '', destaque: false });
+  const [form, setForm] = useState({
+    name: '',
+    description: '',
+    price: '',
+    oldPrice: '',
+    categoryId: '',
+    destaque: false,
+  });
+  const [promocao, setPromocao] = useState(false); // produto em promoção?
   const [imagens, setImagens] = useState([]); // caminhos das fotos já enviadas
   const [enviandoFotos, setEnviandoFotos] = useState(0); // quantas fotos estão subindo agora
   const [variantes, setVariantes] = useState([novaVariante()]);
@@ -33,9 +44,11 @@ export default function ProductForm() {
           name: p.name,
           description: p.description,
           price: p.price,
+          oldPrice: p.oldPrice || '',
           categoryId: p.categoryId,
           destaque: Boolean(p.destaque),
         });
+        setPromocao(Number(p.oldPrice) > 0);
         setImagens(p.images.map((i) => i.url));
         setVariantes(
           p.variants.length
@@ -49,6 +62,11 @@ export default function ProductForm() {
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
     setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
+  }
+
+  function alternarPromocao(ligada) {
+    setPromocao(ligada);
+    if (!ligada) setForm((atual) => ({ ...atual, oldPrice: '' }));
   }
 
   // Envia uma ou várias fotos escolhidas na galeria/câmera do celular
@@ -85,6 +103,12 @@ export default function ProductForm() {
     );
   }
 
+  // Prévia da promoção (só aparece quando os dois preços fazem sentido)
+  const precoNovo = Number(form.price);
+  const precoAntigo = Number(form.oldPrice);
+  const promoValida = promocao && precoNovo > 0 && precoAntigo > precoNovo;
+  const desconto = promoValida ? Math.round((1 - precoNovo / precoAntigo) * 100) : 0;
+
   async function handleSubmit(e) {
     e.preventDefault();
     setErro('');
@@ -101,11 +125,16 @@ export default function ProductForm() {
       setErro('Informe pelo menos uma cor, com o tamanho e a quantidade em estoque.');
       return;
     }
+    if (promocao && !promoValida) {
+      setErro('Na promoção, o preço antigo precisa ser maior que o preço novo.');
+      return;
+    }
 
     setSalvando(true);
     try {
       const payload = {
         ...form,
+        oldPrice: promocao ? form.oldPrice : null,
         images: imagens,
         variants: variantes.filter((v) => v.color.trim()),
       };
@@ -144,7 +173,7 @@ export default function ProductForm() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block font-medium">
-            Preço (R$)
+            {promocao ? 'Preço novo — "POR APENAS" (R$)' : 'Preço (R$)'}
             <input
               name="price"
               type="number"
@@ -167,6 +196,47 @@ export default function ProductForm() {
               ))}
             </select>
           </label>
+        </div>
+
+        <div className="rounded-lg border border-vinho/30 bg-rosa/40 p-4 space-y-3">
+          <label className="flex items-center gap-2 font-medium">
+            <input
+              type="checkbox"
+              checked={promocao}
+              onChange={(e) => alternarPromocao(e.target.checked)}
+              className="w-5 h-5 accent-vinho"
+            />
+            Produto em promoção
+          </label>
+
+          {promocao && (
+            <>
+              <label className="block font-medium">
+                Preço antigo — "DE" (R$)
+                <input
+                  name="oldPrice"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  required
+                  value={form.oldPrice}
+                  onChange={handleChange}
+                  className={`${campo} mt-1`}
+                />
+              </label>
+              <p className="text-sm text-gray-600">
+                O valor que a cliente paga é o "Preço novo" lá em cima. O preço antigo aparece só riscado.
+              </p>
+              {promoValida && (
+                <p className="text-sm">
+                  Vai aparecer assim: <s className="text-gray-500">{reais(precoAntigo)}</s>{' '}
+                  <strong className="text-vinho">{reais(precoNovo)}</strong>{' '}
+                  <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded">-{desconto}%</span>
+                </p>
+              )}
+            </>
+          )}
         </div>
 
         <label className="flex items-center gap-2 font-medium">
