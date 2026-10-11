@@ -107,6 +107,10 @@ export default function Checkout() {
       className="max-w-5xl mx-auto px-4 py-6 sm:py-10 grid gap-8 lg:grid-cols-3"
     >
       <div className="lg:col-span-2 space-y-8">
+        <Link to="/catalogo" className="inline-flex items-center gap-1 text-vinho font-medium">
+          ← Comprar mais produtos
+        </Link>
+
         <section className="space-y-3">
           <h1 className="text-2xl text-vinho">Seus dados</h1>
           <input name="name" required autoComplete="name" placeholder="Nome completo" value={form.name} onChange={handleChange} className={campo} />
@@ -226,6 +230,13 @@ export default function Checkout() {
         >
           {enviando ? 'Processando...' : 'Confirmar pedido'}
         </button>
+
+        <Link
+          to="/catalogo"
+          className="block w-full mt-2 text-center border border-vinho text-vinho py-3.5 rounded-full font-medium text-base hover:bg-rosa"
+        >
+          Comprar mais
+        </Link>
       </aside>
     </form>
   );

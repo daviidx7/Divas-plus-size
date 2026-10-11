@@ -7,6 +7,12 @@ export default function ProductCard({ produto }) {
   const foto = produto.images?.[0]?.url;
   const esgotado = produto.totalEstoque === 0;
 
+  // Promoção: tem "preço antigo" maior que o preço atual
+  const emPromocao = Number(produto.oldPrice) > Number(produto.price);
+  const desconto = emPromocao
+    ? Math.round((1 - Number(produto.price) / Number(produto.oldPrice)) * 100)
+    : 0;
+
   return (
     <Link
       to={`/produto/${produto.id}`}
@@ -30,10 +36,20 @@ export default function ProductCard({ produto }) {
             Esgotado
           </span>
         )}
+        {emPromocao && !esgotado && (
+          <span className="absolute bottom-0 left-0 bg-orange-500 text-white text-sm font-medium px-3 py-1.5">
+            -{desconto}%
+          </span>
+        )}
       </div>
       <div className="p-3">
         <h3 className="text-sm font-medium text-gray-800 line-clamp-2">{produto.name}</h3>
-        <p className="text-vinho font-semibold mt-1">{money(produto.price)}</p>
+        <p className="mt-1 flex flex-wrap items-baseline gap-x-2">
+          <span className="text-vinho font-semibold">{money(produto.price)}</span>
+          {emPromocao && (
+            <span className="text-sm text-gray-400 line-through">{money(produto.oldPrice)}</span>
+          )}
+        </p>
       </div>
     </Link>
   );

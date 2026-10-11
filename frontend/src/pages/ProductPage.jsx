@@ -38,6 +38,12 @@ export default function ProductPage() {
   const totalEstoque = produto.variants.reduce((soma, v) => soma + v.stock, 0);
   const esgotado = totalEstoque === 0;
 
+  // Promoção: tem "preço antigo" maior que o preço atual
+  const emPromocao = Number(produto.oldPrice) > Number(produto.price);
+  const desconto = emPromocao
+    ? Math.round((1 - Number(produto.price) / Number(produto.oldPrice)) * 100)
+    : 0;
+
   const temEstoque = (campo, valor) =>
     produto.variants.some((v) => v[campo] === valor && v.stock > 0);
 
@@ -107,7 +113,19 @@ export default function ProductPage() {
 
       <div>
         <h1 className="text-2xl sm:text-3xl text-vinho font-bold">{produto.name}</h1>
-        <p className="text-2xl text-vinho mt-2">{money(produto.price)}</p>
+
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <p className="text-2xl text-vinho">{money(produto.price)}</p>
+          {emPromocao && (
+            <>
+              <p className="text-lg text-gray-400 line-through">{money(produto.oldPrice)}</p>
+              <span className="bg-orange-500 text-white text-sm px-2 py-0.5 rounded">
+                -{desconto}%
+              </span>
+            </>
+          )}
+        </div>
+
         <p className="text-gray-600 mt-4 whitespace-pre-line">{produto.description}</p>
 
         {esgotado ? (

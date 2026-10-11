@@ -21,6 +21,22 @@ function normalizarVariantes(variants = []) {
     }));
 }
 
+// Preço antigo = o "DE" riscado da promoção. Vazio = produto sem promoção.
+// Devolve { valor } (número ou null) ou { erro } se não fizer sentido.
+function validarPrecoAntigo(oldPrice, price) {
+  if (oldPrice === undefined || oldPrice === null || String(oldPrice).trim() === '') {
+    return { valor: null };
+  }
+  const antigo = Number(oldPrice);
+  if (!Number.isFinite(antigo) || antigo <= 0) {
+    return { erro: 'Preço antigo inválido.' };
+  }
+  if (antigo <= Number(price)) {
+    return { erro: 'O preço antigo precisa ser maior que o preço novo (promocional).' };
+  }
+  return { valor: antigo };
+}
+
 // Cria um tamanho/cor. Se existir um igual que foi removido antes, só reativa.
 // Se existir um igual ativo, devolve o erro de repetido.
 async function criarOuReativarVariante(client, productId, dados) {
@@ -101,10 +117,10 @@ async function buscarPorId(req, res, next) {
 }
 
 // POST /api/admin/products (protegida)
-// body: { name, description, price, categoryId, images: [url], variants: [{size, color, stock}] }
+// body: { name, description, price, oldPrice?, categoryId, images: [url], variants: [{size, color, stock}] }
 async function criar(req, res, next) {
   try {
-    const { name, description, price, categoryId, images = [], destaque = false } = req.body;
+    const { name, description, price, oldPrice, categoryId, images = [], destaque = false } = req.body;
     const variants = normalizarVariantes(req.body.variants);
 
     if (!name || !description || !price || !categoryId) {
@@ -115,11 +131,15 @@ async function criar(req, res, next) {
       return res.status(400).json({ error: 'Cadastre ao menos um tamanho/cor com estoque.' });
     }
 
+    const promo = validarPrecoAntigo(oldPrice, price);
+    if (promo.erro) return res.status(400).json({ error: promo.erro });
+
     const produto = await prisma.product.create({
       data: {
         name,
         description,
         price,
+        oldPrice: promo.valor,
         categoryId,
         destaque: Boolean(destaque),
         images: { create: images.filter(Boolean).map((url, i) => ({ url, order: i })) },
@@ -143,8 +163,21 @@ async function criar(req, res, next) {
 async function atualizar(req, res, next) {
   try {
     const id = req.params.id;
-    const { name, description, price, categoryId, active, images, destaque } = req.body;
+    const { name, description, price, oldPrice, categoryId, active, images, destaque } = req.body;
     const variants = Array.isArray(req.body.variants) ? normalizarVariantes(req.body.variants) : null;
+
+    // Promoção: só mexe no preço antigo se o formulário enviou esse campo
+    let dadosPromocao = {};
+    if (oldPrice !== undefined) {
+      let precoBase = price;
+      if (precoBase === undefined) {
+        const atual = await prisma.product.findUnique({ where: { id }, select: { price: true } });
+        precoBase = atual ? atual.price : undefined;
+      }
+      const promo = validarPrecoAntigo(oldPrice, precoBase);
+      if (promo.erro) return res.status(400).json({ error: promo.erro });
+      dadosPromocao = { oldPrice: promo.valor };
+    }
 
     const produto = await prisma.$transaction(async (tx) => {
       await tx.product.update({
@@ -155,6 +188,7 @@ async function atualizar(req, res, next) {
           price,
           categoryId,
           active,
+          ...dadosPromocao,
           ...(destaque !== undefined ? { destaque: Boolean(destaque) } : {}),
         },
       });
